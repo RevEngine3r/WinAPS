@@ -1,0 +1,6 @@
+/winaps.dist/
+/winaps.build/
+/logs/
+/.venv/
+/nuitka-crash-report.xml
+/.idea/

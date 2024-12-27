@@ -1,0 +1,67 @@
+name: Build and Release with Nuitka
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install nuitka wheel setuptools
+          pip install -r requirements.txt
+
+      - name: Compile Python application with Nuitka
+        run: |
+          mkdir dist
+          nuitka --standalone --onefile --output-dir=dist your_application.py
+
+      - name: Install Inno Setup
+        run: |
+          choco install innosetup -y
+
+      - name: Build Installer with Inno Setup
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup.iss
+
+      - name: Upload Compiled Installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: compiled-installer
+          path: dist/YourApplicationSetup.exe
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v1.0.0
+          release_name: "Release v1.0.0"
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: dist/YourApplicationSetup.exe
+          asset_name: YourApplicationSetup.exe
+          asset_content_type: application/octet-stream
